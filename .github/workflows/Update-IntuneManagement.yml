@@ -1,0 +1,97 @@
+name: 'Update-IntuneManagement'
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * 1'   # Every Monday at 01:00 UTC, before the daily backup at 02:00
+
+jobs:
+  update:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Configure long path
+        run: git config --system core.longpaths true
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: 'main'
+
+      - name: Check for new IntuneManagement release
+        id: version_check
+        shell: pwsh
+        run: |
+          $headers = @{ Authorization = "Bearer ${{ secrets.GITHUB_TOKEN }}"; 'X-GitHub-Api-Version' = '2022-11-28' }
+          $latest  = Invoke-RestMethod -Uri "https://api.github.com/repos/Micke-K/IntuneManagement/releases/latest" -Headers $headers
+          $latestTag = $latest.tag_name
+
+          $versionFile = "${{ github.workspace }}\runtime\IntuneManagement.version"
+          $currentTag  = if (Test-Path $versionFile) { (Get-Content $versionFile -Raw).Trim() } else { '' }
+
+          Write-Host "Current : $currentTag"
+          Write-Host "Latest  : $latestTag"
+
+          if ($latestTag -eq $currentTag) {
+            Write-Host "Already up to date - skipping."
+            "update_needed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } else {
+            Write-Host "New version available: $latestTag"
+            "update_needed=true"  | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            "version=$latestTag"  | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          }
+
+      - name: Download and extract IntuneManagement
+        if: steps.version_check.outputs.update_needed == 'true'
+        shell: pwsh
+        run: |
+          $version   = "${{ steps.version_check.outputs.version }}"
+          $targetDir = "${{ github.workspace }}\runtime\IntuneManagement"
+          $zipPath   = "${{ github.workspace }}\IntuneManagement.zip"
+          $tempDir   = "${{ github.workspace }}\IntuneManagement_tmp"
+
+          # Download source archive for the release tag
+          $downloadUrl = "https://github.com/Micke-K/IntuneManagement/archive/refs/tags/$version.zip"
+          Write-Host "Downloading $downloadUrl"
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -Headers @{ Authorization = "Bearer ${{ secrets.GITHUB_TOKEN }}" }
+
+          # Remove old runtime
+          if (Test-Path $targetDir) {
+            Write-Host "Removing old runtime at $targetDir"
+            Remove-Item -Path $targetDir -Recurse -Force
+          }
+
+          # Ensure parent directory exists before moving
+          New-Item -ItemType Directory -Path (Split-Path $targetDir) -Force | Out-Null
+
+          # Extract to temp dir then move the inner folder into place
+          # GitHub archives always contain a single top-level subfolder
+          Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+          $inner = Get-ChildItem -Path $tempDir -Directory | Select-Object -First 1
+          Move-Item -Path $inner.FullName -Destination $targetDir
+
+          # Cleanup
+          Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path $zipPath -Force
+
+          # Record installed version
+          $version | Set-Content -Path "${{ github.workspace }}\runtime\IntuneManagement.version" -Encoding UTF8
+          Write-Host "Installed IntuneManagement $version"
+
+      - name: Commit updated runtime
+        if: steps.version_check.outputs.update_needed == 'true'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version_check.outputs.version }}"
+          git config --system core.longpaths true
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout main
+          git pull
+          git add runtime/
+          git status
+          git commit -m "[update] IntuneManagement $version"
+
+      - name: Push changes
+        if: steps.version_check.outputs.update_needed == 'true'
+        run: git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
