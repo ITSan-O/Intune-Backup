@@ -1,0 +1,58 @@
+<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="grdJsonOptions">
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" SharedSizeGroup="TitleColumn" />
+        <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <StackPanel Orientation="Horizontal" Grid.Row='0' Margin="0,0,5,0">
+        <Label Content="Json name" />
+        <Rectangle Style="{DynamicResource InfoIcon}">
+            <Rectangle.ToolTip>
+                <TextBlock>
+                    Full path to the name of the output file<LineBreak />
+                    Default value is %MyDocuments%\%Organization%-%Date%.json<LineBreak />
+                    Special folders and environment variables can be used
+                </TextBlock>
+            </Rectangle.ToolTip>
+        </Rectangle>
+    </StackPanel>
+    <Grid Grid.Column='1' Grid.Row='0' Margin="0,5,5,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="5" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBox Text="" Name="txtJsonFileName" />
+        <Button Grid.Column="2" Name="browseJsonFileName" Padding="5,0,5,0" Width="50" ToolTip="Select output file">...</Button>
+    </Grid>
+
+    <StackPanel Orientation="Horizontal" Grid.Row='1' Margin="0,0,5,0">
+        <Label Content="Open document" />
+        <Rectangle Style="{DynamicResource InfoIcon}" ToolTip="Open the document when export is finished" />
+    </StackPanel>
+    <CheckBox Grid.Column='1' Grid.Row='1' Name='chkJsonOpenDocument' VerticalAlignment="Center" IsChecked="true" />
+
+    <StackPanel Orientation="Horizontal" Grid.Row='2' Margin="0,5,5,0">
+        <Label Content="Output File" />
+        <Rectangle Style="{DynamicResource InfoIcon}" ToolTip="One single Json file for all objects, or one file per object type saved in the same folder as the Json name" />
+    </StackPanel>
+    <ComboBox Name="cbJsonOutputFile" Margin="0,5,0,0" MinWidth="250" Grid.Row='2' Grid.Column="1" HorizontalAlignment="Left"
+              DisplayMemberPath="Name" SelectedValuePath="Value" />
+
+
+</Grid>
