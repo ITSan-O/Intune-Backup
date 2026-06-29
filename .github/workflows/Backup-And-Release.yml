@@ -20,9 +20,16 @@ jobs:
           ref: 'main'
       - name: "Export_Backup"
         continue-on-error: false
-        shell: "Powershell"
+        shell: PowerShell
         run: |
-          ${{ github.workspace }}\runtime\IntuneManagement\Start-IntuneManagement.ps1 -Silent -SilentBatchFile "${{ github.workspace }}\config\BulkExport.json" -AppId ${{ secrets.AZURE_CLIENT_ID }} -Secret ${{ secrets.AZURE_CLIENT_SEC }} -TenantId ${{ secrets.AZURE_TENANT_ID }}
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+          & "${{ github.workspace }}\runtime\IntuneManagement\Start-IntuneManagement.ps1" `
+            -Silent `
+            -SilentBatchFile "${{ github.workspace }}\config\BulkExport.json" `
+            -AppId "${{ secrets.AZURE_CLIENT_ID }}" `
+            -Secret "${{ secrets.AZURE_CLIENT_SEC }}" `
+            -TenantId "${{ secrets.AZURE_TENANT_ID }}"
+            ``
       - name: "Commit Release Candidate"
         continue-on-error: true
         run: |
