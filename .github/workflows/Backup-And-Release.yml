@@ -18,18 +18,31 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: 'main'
-      - name: "Export_Backup"
+      - name: Export_Backup
         continue-on-error: false
-        shell: PowerShell
+        shell: pwsh
         run: |
+          Write-Host "Workspace path: $env:GITHUB_WORKSPACE"
+       
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-          & "${{ github.workspace }}\runtime\IntuneManagement\Start-IntuneManagement.ps1" `
+       
+          $scriptPath = "$env:GITHUB_WORKSPACE\runtime\IntuneManagement\Start-IntuneManagement.ps1"
+          $configPath = "$env:GITHUB_WORKSPACE\config\BulkExport.json"
+       
+          Write-Host "Script path: $scriptPath"
+       
+          if (!(Test-Path $scriptPath)) {
+              Write-Error "SCRIPT NOT FOUND!"
+              Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse
+              exit 1
+          }
+       
+          & $scriptPath `
             -Silent `
-            -SilentBatchFile "${{ github.workspace }}\config\BulkExport.json" `
+            -SilentBatchFile $configPath `
             -AppId "${{ secrets.AZURE_CLIENT_ID }}" `
             -Secret "${{ secrets.AZURE_CLIENT_SEC }}" `
             -TenantId "${{ secrets.AZURE_TENANT_ID }}"
-            ``
       - name: "Commit Release Candidate"
         continue-on-error: true
         run: |
