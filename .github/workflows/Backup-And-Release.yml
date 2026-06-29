@@ -19,27 +19,19 @@ jobs:
         with:
           ref: 'main'
       - name: Export_Backup
-        continue-on-error: false
         shell: pwsh
         run: |
-          Write-Host "Workspace path: $env:GITHUB_WORKSPACE"
-       
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
        
-          $scriptPath = "$env:GITHUB_WORKSPACE\runtime\IntuneManagement\Start-IntuneManagement.ps1"
-          $configPath = "$env:GITHUB_WORKSPACE\config\BulkExport.json"
+          cd $env:GITHUB_WORKSPACE
        
-          Write-Host "Script path: $scriptPath"
+          git clone https://github.com/Micke-K/IntuneManagement.git tempIM
        
-          if (!(Test-Path $scriptPath)) {
-              Write-Error "SCRIPT NOT FOUND!"
-              Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse
-              exit 1
-          }
+          $scriptPath = "$env:GITHUB_WORKSPACE\tempIM\Start-IntuneManagement.ps1"
        
           & $scriptPath `
             -Silent `
-            -SilentBatchFile $configPath `
+            -SilentBatchFile "$env:GITHUB_WORKSPACE\config\BulkExport.json" `
             -AppId "${{ secrets.AZURE_CLIENT_ID }}" `
             -Secret "${{ secrets.AZURE_CLIENT_SEC }}" `
             -TenantId "${{ secrets.AZURE_TENANT_ID }}"
